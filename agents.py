@@ -1,13 +1,19 @@
-from mesa import agent
+from mesa import Agent
 
-from pollinator_model import PollinatorModel
+IMAGES = {
+    "bee": "Images/bee.png",    
+    "flower": "Images/flower.png",  # Replace with actual URL or local path
+    "hive": "Images/hive.png"       # Replace with actual URL or local path
+}
 
 class Bees(Agent):
-    def __init__(self, model, initial_health=100):
+    def __init__(self, model, initial_health=5):
         super().__init__(model)
+        self.type = 'bee'
         self.health = initial_health
         self.pollen = 0
         self.max_pollen_capacity = 50
+        self.image = IMAGES['bee']
 
     def random_move(self):
         # pollinator randomly moves
@@ -49,11 +55,15 @@ class Bees(Agent):
             self.forage()
 
 class Flower(Agent):
-    def __init__(self, unique_id, model, contaminated=False):
-        super().__init__(unique_id, model)
+    def __init__(self, model, contaminated=False):
+        super().__init__(model)
+        self.type = 'flower'
         self.contaminated = contaminated
+        self.image = IMAGES['flower']
 
 class Hive(Agent):
-    def __init__(self, unique_id, model, contaminated=False):
-        super().__init__(unique_id, model)
+    def __init__(self, model, contaminated=False):
+        super().__init__(model)
+        self.type = 'hive'
         self.contaminated = contaminated
+        self.image = IMAGES["hive"]
