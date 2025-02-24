@@ -39,7 +39,8 @@ class PollinatorModel(Model):
         self.datacollector = DataCollector(
             model_reporters={
                 "Total Pollinators": lambda m: len(m.agents_by_type[Bees]),
-                "Average Bee Health": lambda m: np.mean([bee.health for bee in m.agents_by_type[Bees]])
+                "Average Bee Health": lambda m: np.mean([bee.health for bee in m.agents_by_type[Bees]]),
+                "Contaminated Bees": lambda m: len([bee.contaminated for bee in m.agents_by_type[Bees] if bee.contaminated])
             }
         )
 
@@ -50,9 +51,3 @@ class PollinatorModel(Model):
         # Collect model data
         self.datacollector.collect(self)
 
-model = PollinatorModel()
-for _ in range(1000):
-    model.step()
-
-data = model.datacollector.get_model_vars_dataframe()
-print(data)

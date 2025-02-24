@@ -35,20 +35,25 @@ def agent_graph(model):
     ax.axis('off')
     for agent in model.agents:
         zoom = zoom_size[agent.type]
-        add_image(ax, image=agent.image, x=agent.pos[0], y=agent.pos[1], zoom=zoom)
+        if agent.contaminated:
+            add_image(ax, image=agent.image_contaminated, x=agent.pos[0], y=agent.pos[1], zoom=zoom)
+        else:
+            add_image(ax, image=agent.image, x=agent.pos[0], y=agent.pos[1], zoom=zoom)
     solara.FigureMatplotlib(fig)
     
 # Initiate the model
 model = PollinatorModel()
 population_plot = make_plot_component("Total Pollinators")
 health_plot = make_plot_component("Average Bee Health")
+contaminated_plot = make_plot_component("Contaminated Bees")
 
 page = SolaraViz(
     model, 
     components=[
         agent_graph,
         population_plot,
-        health_plot
+        health_plot,
+        contaminated_plot
         ],
     model_params={},
     name="Pollinator Model",

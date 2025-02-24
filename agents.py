@@ -2,18 +2,23 @@ from mesa import Agent
 
 IMAGES = {
     "bee": "Images/bee.png",    
-    "flower": "Images/flower.png",  # Replace with actual URL or local path
-    "hive": "Images/hive.png"       # Replace with actual URL or local path
+    "flower": "Images/flower.png",
+    "hive": "Images/hive.png",
+    'bee_contaminated': "Images/bee_contaminated.png",
+    'flower_contaminated': "Images/flower_contaminated.png",
+    'hive_contaminated': "Images/hive_contaminated.png"
 }
 
 class Bees(Agent):
-    def __init__(self, model, initial_health=5):
+    def __init__(self, model, initial_health=5, contaminated=False):
         super().__init__(model)
         self.type = 'bee'
         self.health = initial_health
         self.pollen = 0
         self.max_pollen_capacity = 50
+        self.contaminated = contaminated
         self.image = IMAGES['bee']
+        self.image_contaminated = IMAGES['bee_contaminated']
 
     def random_move(self):
         # pollinator randomly moves
@@ -30,6 +35,7 @@ class Bees(Agent):
             if isinstance(obj, Flower):
                 self.pollen += 5
                 if obj.contaminated:
+                    self.contaminated = True
                     self.health -= 1
 
     def death(self):
@@ -60,6 +66,7 @@ class Flower(Agent):
         self.type = 'flower'
         self.contaminated = contaminated
         self.image = IMAGES['flower']
+        self.image_contaminated = IMAGES['flower_contaminated']
 
 class Hive(Agent):
     def __init__(self, model, contaminated=False):
@@ -67,3 +74,4 @@ class Hive(Agent):
         self.type = 'hive'
         self.contaminated = contaminated
         self.image = IMAGES["hive"]
+        self.image_contaminated = IMAGES['hive_contaminated']
