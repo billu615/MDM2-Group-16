@@ -40,9 +40,19 @@ def agent_graph(model):
         else:
             add_image(ax, image=agent.image, x=agent.pos[0], y=agent.pos[1], zoom=zoom)
     solara.FigureMatplotlib(fig)
+    plt.close(fig)
+
+@solara.component
+def hive_food_plot(model):
+    update_counter.get()
+    fig = plt.figure()
+    food_data = {f'hive{index}':agent.food_source for index, agent in enumerate(model.agents) if agent.type == 'hive'}
+    plt.bar(list(food_data.keys()), list(food_data.values()))
+    solara.FigureMatplotlib(fig)
+    plt.close(fig)
     
 # Initiate the model
-model = PollinatorModel()
+model = PollinatorModel(width=500, height=500)
 population_plot = make_plot_component("Total Pollinators")
 health_plot = make_plot_component("Average Bee Health")
 contaminated_plot = make_plot_component("Contaminated Bees")
@@ -53,7 +63,8 @@ page = SolaraViz(
         agent_graph,
         population_plot,
         health_plot,
-        contaminated_plot
+        contaminated_plot,
+        hive_food_plot
         ],
     model_params={},
     name="Pollinator Model",

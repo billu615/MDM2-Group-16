@@ -1,40 +1,55 @@
 import numpy as np
 from mesa import Model
-from mesa.space import MultiGrid
+from mesa.space import ContinuousSpace
 from mesa.datacollection import DataCollector
 
 from agents import Bees, Flower, Hive
 
 class PollinatorModel(Model):
-    def __init__(self, width=150, height=150, num_pollinators=100, num_flowers=50, num_hive=2,
-                 pesticide_ratio=0.9):
+    def __init__(self, 
+                 width=150, 
+                 height=150, 
+                 num_pollinators=100, 
+                 avg_flowers_per_unit=0.01, 
+                 num_hive=2,
+                 pesticide_ratio=0.7,
+                 bee_sensing_radius=2):
         super().__init__()
 
         self.width = width
         self.height = height
+        self.num_hive = num_hive
 
-        self.grid = MultiGrid(width, height, True)
+        self.space = ContinuousSpace(width, height, True)
         
-        pollinator_agents = Bees.create_agents(model=self, n=num_pollinators)
+        # Initiate number of flower with poisson distribution
+        num_flowers = np.random.poisson(avg_flowers_per_unit * (width*height)**2)
+        num_flowers = 100
+
+        # Create Agents
+        pollinator_agents = Bees.create_agents(model=self,
+                                                n=num_pollinators,
+                                                bee_sensing_radius=bee_sensing_radius)
         flower_agents = Flower.create_agents(model=self, n=num_flowers)
         hive_agents = Hive.create_agents(model=self, n=num_hive)
 
         # place flower agent
         for i in flower_agents:
-            x, y = self.random.randrange(width), self.random.randrange(height)
+            x, y = self.random.uniform(0, width), self.random.uniform(0, height)
             contaminated = self.random.random() < pesticide_ratio
             i.contaminated = contaminated
-            self.grid.place_agent(i, (x, y))
+            self.space.place_agent(i, (x, y))
         
-        # place pollinator agent
-        for i in pollinator_agents:
-            x, y = self.random.randrange(width), self.random.randrange(height)
-            self.grid.place_agent(i, (x, y))
-        
-        # place hive agent (hives are not comtaminated)
-        for i in hive_agents:
-            x, y = self.random.randrange(width), self.random.randrange(height)
-            self.grid.place_agent(i, (x, y))
+        # place initial hive and bee agent (hives are not comtaminated)
+        for index, hive in enumerate(hive_agents):
+            x, y = self.random.uniform(0, width), self.random.uniform(0, height)
+            self.space.place_agent(hive, (x, y))
+            for bee in pollinator_agents:
+                if bee.hive == index + 1:
+                    self.space.place_agent(bee, (x, y))
+                    bee.hive_object = hive
+
+        #print([agent.hive_object for agent in self.agents_by_type[Bees]])
 
         self.datacollector = DataCollector(
             model_reporters={
@@ -46,7 +61,7 @@ class PollinatorModel(Model):
 
     def step(self):
         # Pollinator do step
-        self.agents.select(agent_type=Bees).do('step')
+        self.agents.select(agent_type=Bees).shuffle_do('step')
 
         # Collect model data
         self.datacollector.collect(self)
