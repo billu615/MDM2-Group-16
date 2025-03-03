@@ -32,6 +32,7 @@ def agent_graph(model):
     fig, ax = plt.subplots()
     ax.set_xlim(model.width)
     ax.set_ylim(model.height)
+    ax.title.set_text(f'{model.bee_type} simulation')
     ax.axis('off')
     for agent in model.agents:
         zoom = zoom_size[agent.type]
@@ -52,7 +53,7 @@ def hive_food_plot(model):
     plt.close(fig)
     
 # Initiate the model
-model = PollinatorModel(width=500, height=500)
+model = PollinatorModel(bee_type='solitary', width=500, height=500)
 population_plot = make_plot_component("Total Pollinators")
 health_plot = make_plot_component("Average Bee Health")
 contaminated_plot = make_plot_component("Contaminated Bees")
