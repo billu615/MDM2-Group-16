@@ -49,13 +49,17 @@ class SolitaryBees(Agent):
     '''
 
     def random_walk(self):
+        # Generate angle and length
         angle = self.model.random.uniform(0, 2 * np.pi) + (np.random.normal(0, np.pi / 2) if self.contaminated else 0)
         step_length = 10 * (0.5 if self.contaminated else 1)  # Slower movement
+
+        # Moving agent
         self.pos += step_length * np.array([np.cos(angle), np.sin(angle)])
         self.model.space.move_agent(self, self.pos)
         self.energy -= 0.2
 
     def forage(self):
+        # Gets flower neighbours
         flower_neighbours = np.array(
             [agent for agent in self.model.space.get_neighbors(self.pos, self.bee_sensing_radius, True)
              if agent.type == 'flower']
@@ -96,7 +100,7 @@ class SolitaryBees(Agent):
 
     def step(self):
         self.death()
-        if self.nectar < self.max_nectar_capacity or self.energy > 20:
+        if self.nectar < self.max_nectar_capacity or self.energy > 20.0:
             self.random_walk()
             self.forage()
         else:
@@ -124,9 +128,14 @@ class BumbleBees(Agent):
         self.nectar = 0
         self.max_nectar_capacity = 60
         
-        # Movement attributes
+        # Basic Movement attributes
         self.bee_sensing_radius=bee_sensing_radius
         self.speed = 1
+
+        # Trapline Movement attributes
+        self.flowers_memory = []
+
+        # Hive attributes
         self.hive = self.model.random.randint(1, self.model.num_hive)
         self.hive_object = None
         self.time_not_return_hive = 0
@@ -141,6 +150,8 @@ class BumbleBees(Agent):
     =================================
     '''
 
+       
+
     def levy_flight_step(self):
         # Generate angle
         angle = np.random.uniform(0, 2 * np.pi)
@@ -151,6 +162,7 @@ class BumbleBees(Agent):
         self.energy -= 0.2
 
     def forage(self):
+        # Gets flower neighbours
         flower_neighbours = np.array(
             [agent for agent in self.model.space.get_neighbors(self.pos, self.bee_sensing_radius, True)
              if agent.type == 'flower']
@@ -164,18 +176,26 @@ class BumbleBees(Agent):
     def return_to_hive(self):
         direction = self.hive_object.pos - self.pos
         distance = np.linalg.norm(direction)
-        if distance < 5:          # Arrived at the hive
+        # Arrived at the hive
+        if distance < 5:          
             self.pos = self.hive_object.pos
             self.model.space.move_agent(self, self.pos)
             print('returned to hive')
+
+            # Reset parameter once return to hive
             self.hive_object.food_source += self.nectar
             self.nectar = 0
             self.energy = 50
+
+            # Contaminate hive
             if self.contaminated:
                 self.hive_object.contaminated = True
         else:
-            if self.contaminated and np.random.random() < 0.3:  # 30% chance of flying in the wrong direction
+            # 30% chance of flying in the wrong direction
+            if self.contaminated and np.random.random() < 0.3:
                 direction = np.random.uniform(-1, 1, 2)
+            
+            # Moving to hive
             direction /= distance  # Normalize
             self.pos += direction * 5  # Move towards hive
             self.model.space.move_agent(self, self.pos)
@@ -191,7 +211,7 @@ class BumbleBees(Agent):
 
     def step(self):
         self.death()
-        if self.nectar < self.max_nectar_capacity or self.energy > 20:
+        if self.nectar < self.max_nectar_capacity or self.energy > 20.0:
             self.levy_flight_step()
             self.forage()
         else:
@@ -221,7 +241,7 @@ class HoneyBees(Agent):
         
         # Movement attributes
         self.bee_sensing_radius=bee_sensing_radius
-        self.speed = 1
+        self.speed = 5
         self.hive = self.model.random.randint(1, self.model.num_hive)
         self.hive_object = None
         self.time_not_return_hive = 0
@@ -236,16 +256,18 @@ class HoneyBees(Agent):
     =================================
     '''
 
-    def levy_flight_step(self):
+    def levy_flight(self):
         # Generate angle
         angle = np.random.uniform(0, 2 * np.pi)
-        # Generate step length based on pareto distribution
+        # Generate step length based on pareto distribution (Speed)
         step_length = np.random.pareto(1.5) * 5  # Power-law distribution
+        # Move based on angle and direction
         self.pos += step_length * np.array([np.cos(angle), np.sin(angle)])
         self.model.space.move_agent(self, self.pos)
         self.energy -= 0.2
 
     def forage(self):
+        # Gets flower neighbours
         flower_neighbours = np.array(
             [agent for agent in self.model.space.get_neighbors(self.pos, self.bee_sensing_radius, True)
              if agent.type == 'flower']
@@ -259,18 +281,26 @@ class HoneyBees(Agent):
     def return_to_hive(self):
         direction = self.hive_object.pos - self.pos
         distance = np.linalg.norm(direction)
-        if distance < 5:          # Arrived at the hive
+        # Arrived at the hive
+        if distance < 5:          
             self.pos = self.hive_object.pos
             self.model.space.move_agent(self, self.pos)
             print('returned to hive')
+
+            # Reset parameter once return to hive
             self.hive_object.food_source += self.nectar
             self.nectar = 0
             self.energy = 50
+
+            # Contaminate hive
             if self.contaminated:
                 self.hive_object.contaminated = True
         else:
-            if self.contaminated and np.random.random() < 0.3:  # 30% chance of flying in the wrong direction
+            # 30% chance of flying in the wrong direction
+            if self.contaminated and np.random.random() < 0.3:
                 direction = np.random.uniform(-1, 1, 2)
+            
+            # Moving to hive
             direction /= distance  # Normalize
             self.pos += direction * 5  # Move towards hive
             self.model.space.move_agent(self, self.pos)
@@ -287,7 +317,7 @@ class HoneyBees(Agent):
     def step(self):
         self.death()
         if self.nectar < self.max_nectar_capacity or self.energy > 20:
-            self.levy_flight_step()
+            self.levy_flight()
             self.forage()
         else:
             self.return_to_hive()

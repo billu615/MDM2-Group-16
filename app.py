@@ -53,7 +53,7 @@ def hive_food_plot(model):
     plt.close(fig)
     
 # Initiate the model
-model = PollinatorModel(bee_type='solitary', width=500, height=500)
+model = PollinatorModel(bee_type='solitary', width=500, height=500, num_pollinators=1)
 population_plot = make_plot_component("Total Pollinators")
 health_plot = make_plot_component("Average Bee Health")
 contaminated_plot = make_plot_component("Contaminated Bees")
