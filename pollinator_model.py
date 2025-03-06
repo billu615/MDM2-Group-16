@@ -3,14 +3,16 @@ from mesa import Model
 from mesa.space import ContinuousSpace
 from mesa.datacollection import DataCollector
 
-from agents import HoneyBees, BumbleBees, SolitaryBees, Flower, Hive
+from agents.honeybee import HoneyBees
+from agents.bumblebee import BumbleBees
+from agents.solitarybee import SolitaryBees
+from agents.hive_flower import Hive, Flower
 
 bee_types = {
     'honeybee' : HoneyBees,
     'bumblebee' : BumbleBees,
     'solitary' : SolitaryBees
 }
-
 
 class PollinatorModel(Model):
     def __init__(self, 
@@ -39,48 +41,34 @@ class PollinatorModel(Model):
         self.bee_type = bee_type
         Bees = bee_types[self.bee_type]
 
-        # Creating and placing agents
-        if self.bee_type == 'honeybee' or self.bee_type == 'bumblebee':
-            # Create Agents
-            pollinator_agents = Bees.create_agents(model=self,
-                                                    n=num_pollinators,
-                                                    bee_sensing_radius=bee_sensing_radius)
-            flower_agents = Flower.create_agents(model=self, n=num_flowers)
-            hive_agents = Hive.create_agents(model=self, n=num_hive)
+        # Create Agents
+        flower_agents = Flower.create_agents(model=self, n=num_flowers)
+        hive_agents = Hive.create_agents(model=self, n=num_hive)
+        pollinator_agents = Bees.create_agents(model=self,
+                                                n=num_pollinators,
+                                                bee_sensing_radius=bee_sensing_radius)
 
-            # place flower agent
-            for i in flower_agents:
-                x, y = self.random.uniform(0, width), self.random.uniform(0, height)
-                contaminated = self.random.random() < pesticide_ratio
-                i.contaminated = contaminated
-                self.space.place_agent(i, (x, y))
-            
-            # place initial hive and bee agent (hives are not comtaminated)
-            for index, hive in enumerate(hive_agents):
-                x, y = self.random.uniform(0, width), self.random.uniform(0, height)
-                self.space.place_agent(hive, (x, y))
-                for bee in pollinator_agents:
-                    if bee.hive == index + 1:
-                        self.space.place_agent(bee, (x, y))
-                        bee.hive_object = hive
-        else:
-            # Create Agents
-            pollinator_agents = Bees.create_agents(model=self,
-                                                    n=num_pollinators,
-                                                    bee_sensing_radius=bee_sensing_radius)
-            flower_agents = Flower.create_agents(model=self, n=num_flowers)
+        # place flower agent
+        for i in flower_agents:
+            x, y = self.random.uniform(0, width), self.random.uniform(0, height)
+            contaminated = self.random.random() < pesticide_ratio
+            i.contaminated = contaminated
+            self.space.place_agent(i, (x, y))
 
-            # place flower agent
-            for i in flower_agents:
-                x, y = self.random.uniform(0, width), self.random.uniform(0, height)
-                contaminated = self.random.random() < pesticide_ratio
-                i.contaminated = contaminated
-                self.space.place_agent(i, (x, y))
-            
-            # place bee agent
-            for i in pollinator_agents:
-                x, y = self.random.uniform(0, width), self.random.uniform(0, height)
-                self.space.place_agent(i, (x, y))
+        # Add flower memory to bumblebee
+        if self.bee_type == 'bumblebee':
+            flowers_pos = [agent.pos for agent in self.agents_by_type[Flower]]
+            for bee in pollinator_agents:
+                bee.waypoints = self.random.choices(flowers_pos, k=6)
+        
+        # place initial hive and bee agent (hives are not comtaminated)
+        for index, hive in enumerate(hive_agents):
+            x, y = self.random.uniform(0, width), self.random.uniform(0, height)
+            self.space.place_agent(hive, (x, y))
+            for bee in pollinator_agents:
+                if bee.hive == index + 1:
+                    self.space.place_agent(bee, (x, y))
+                    bee.hive_object = hive
 
         # Specify data collection
         self.datacollector = DataCollector(
@@ -95,8 +83,7 @@ class PollinatorModel(Model):
         # Pollinator do step
         self.agents.select(agent_type=bee_types[self.bee_type]).shuffle_do('step')
 
-        if self.bee_type == 'honeybee' or self.bee_type == 'bumblebee':
-            self.agents.select(agent_type=Hive).do('step')
+        self.agents.select(agent_type=Hive).do('step')
 
         # Collect model data
         self.datacollector.collect(self)
