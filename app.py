@@ -36,10 +36,16 @@ def agent_graph(model):
     ax.axis('off')
     for agent in model.agents:
         zoom = zoom_size[agent.type]
-        if agent.contaminated:
-            add_image(ax, image=agent.image_contaminated, x=agent.pos[0], y=agent.pos[1], zoom=zoom)
+        if agent.type == 'bee':
+            if agent.contaminated:
+                ax.plot(agent.pos[0], agent.pos[1], color='red', marker='o', markersize=2)
+            else:
+                ax.plot(agent.pos[0], agent.pos[1], color='black', marker='o', markersize=2)
         else:
-            add_image(ax, image=agent.image, x=agent.pos[0], y=agent.pos[1], zoom=zoom)
+            if agent.contaminated:
+                add_image(ax, image=agent.image_contaminated, x=agent.pos[0], y=agent.pos[1], zoom=zoom)
+            else:
+                add_image(ax, image=agent.image, x=agent.pos[0], y=agent.pos[1], zoom=zoom)
     solara.FigureMatplotlib(fig)
     plt.close(fig)
 
@@ -53,18 +59,21 @@ def hive_food_plot(model):
     plt.close(fig)
     
 # Initiate the model
-model = PollinatorModel(bee_type='bumblebee', width=500, height=500)
+model = PollinatorModel(bee_type='bumblebee', sensitivity='moderate', width=500, height=500)
 population_plot = make_plot_component("Total Pollinators")
-health_plot = make_plot_component("Average Bee Health")
+# health_plot = make_plot_component("Average Bee Health")
+dosage_plot = make_plot_component('Average dosage')
 contaminated_plot = make_plot_component("Contaminated Bees")
+nectar_plot = make_plot_component("Average nectar")
 
 page = SolaraViz(
     model, 
     components=[
         agent_graph,
         population_plot,
-        health_plot,
+        dosage_plot,
         contaminated_plot,
+        nectar_plot,
         hive_food_plot
         ],
     model_params={},

@@ -16,13 +16,13 @@ class Flower(Agent):
         self.type = 'flower'
         self.contaminated = contaminated
         self.nectar_amount = self.model.random.randint(10, 51) # measured in micrograms
-        self.ppb = self.model.random.uniform(1.9, 208.8)
+        self.ppb = self.model.random.uniform(1.9, 46.4)
 
         # Image Attributes
         self.image = IMAGES['flower']
         self.image_contaminated = IMAGES['flower_contaminated']
 
-    def doses(self):
+    def dosage(self):
         """ return dosage of pesticide in micrograms
         """
         return self.nectar_amount * self.ppb * 10**-6
@@ -39,10 +39,14 @@ class Hive(Agent):
         self.image_contaminated = IMAGES['hive_contaminated']
 
     def step(self):
-        if self.model.random.random() < 0.5 and self.food_source > 100:
+        if self.contaminated:
+            probability = 0.05
+        else:
+            probability = 0.1
+        if self.model.random.random() < probability:
             new_agent = self.model.add_agent(hive=self.pos)
             new_agent.hive_object = self
 
             # Remove food source for reproduction
-            self.food_source -= 50
+            #self.food_source -= 50
             print('agents added')

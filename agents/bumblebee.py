@@ -10,52 +10,50 @@ IMAGES = {
     'hive_contaminated': "Images/hive_contaminated.png"
 }
 
-
-data = {
-    "Bee Type": ["Honey Bee", "Honey Bee", "Bumble Bee", "Bumble Bee", "Solitary Bee", "Solitary Bee"],
-    "Effect Type": ["Sub Lethal", "Lethal", "Sub Lethal", "Lethal", "Sub Lethal", "Lethal"],
-    "x50 (ppb)": [4.8, 185, 2.87, 120, 3, 0.45],  # LC50 or threshold for 50% response
-    "k (Steepness)": [3, 10, 2, 8, 4, 2]  # Steepness of response curve
+# Use acute data only for short term effect (microgram)
+ld50_data = {
+    "honeybee": 0.0102,
+    "bumblebee": 0.014,
+    "solitary": 0.00386
 }
 
-# Neonicotinoid exposure data for different bees
-data = {
-    "honeybee" : {"lethal": 185, "sublethal": 4.8, "steepness" : [10, 3]},
-    "bumblebee" : {"lethal": 120, "sublethal": 2.87, "steepness" : [8, 2]},
-    "solitary" : {"lethal": 0.45, "sublethal": 3,  "steepness" : [2, 4]}
+# Controls how quickly the probability of lethality increases around the LD50 value
+steepness_dict = {
+    "honeybee": {"low": 1, "moderate": 2, "high": 4},
+    "bumblebee": {"low": 1.5, "moderate": 3, "high": 5},
+    "solitary": {"low": 1, "moderate": 2.5, "high": 4.5}
 }
 
-def hill_function(x, x50, k):
+def hill_mortality(x, x50, n):
     """
     Hill function, return the proability of the effect
     x: exposure level (ppb)
     x50: concentration at which 50% of bees show the effect (LC50)
     k: steepness of the response curve (need to estimate)
     """
-    try:
-        return  (1+(x50/x)**k)**(-1)
-    except ZeroDivisionError:
-        return 0
+    return (x ** n) / (x ** n + x50 ** n)
 
 class BumbleBees(Agent):
     def __init__(self, 
                  model,
-                 bee_sensing_radius=2,
-                 initial_health=5, 
+                 sensitivity, 
                  contaminated=False):
         super().__init__(model)
         self.type = 'bee'
-        self.health = initial_health
-        self.energy = 50
+
+        # Health attributes
+        self.pesticide_exposure = 0
         self.contaminated = contaminated
+        self.sensitivity = sensitivity
+        self.energy = 400
+        self.energy_cost = 1
 
         # Foraging attributes
         self.nectar = 0
         self.max_nectar_capacity = 100
-        self.exposure = 0
         
         # Basic Movement attributes
-        self.bee_sensing_radius=bee_sensing_radius
+        self.bee_sensing_radius = 1
         self.speed = 3
 
         # Trapline Movement attributes
@@ -92,6 +90,7 @@ class BumbleBees(Agent):
         speed_factor = 0.7 if self.contaminated else 1  # Reduced speed due to pesticide exposure
         self.pos += (direction * self.speed * speed_factor) + noise
         self.model.space.move_agent(self, self.pos)
+        self.energy -= self.energy_cost
 
     def forage(self):
         # Gets flower neighbours
@@ -101,9 +100,11 @@ class BumbleBees(Agent):
         )
         for flower in flower_neighbours:
             self.nectar += flower.nectar_amount
+            self.energy += self.random.randint(4,10)
             if flower.contaminated:
+                pesticide_dosage = flower.dosage()
+                self.pesticide_exposure += pesticide_dosage
                 self.contaminated = True
-                self.health -= 1
     
     def return_to_hive(self):
         direction = self.hive_object.pos - self.pos
@@ -112,12 +113,12 @@ class BumbleBees(Agent):
         if distance < 5:          
             self.pos = self.hive_object.pos
             self.model.space.move_agent(self, self.pos)
-            print('returned to hive')
+            #print('returned to hive')
 
             # Reset parameter once return to hive
             self.hive_object.food_source += self.nectar
             self.nectar = 0
-            self.energy = 50
+            self.energy = 400
             self.current_waypoint = 0
 
             # Contaminate hive
@@ -125,22 +126,29 @@ class BumbleBees(Agent):
                 self.hive_object.contaminated = True
         else:
             # 30% chance of flying in the wrong direction
-            if self.contaminated and np.random.random() < 0.3:
-                direction = np.random.uniform(-1, 1, 2)
+            if self.contaminated and self.model.random.random() < 0.3:
+                direction = self.model.rng.uniform(-1, 1, 2)
             
             # Moving to hive
             direction /= distance  # Normalize
             self.pos += direction * 5  # Move towards hive
             self.model.space.move_agent(self, self.pos)
-            self.energy -= 0.2
+            self.energy -= self.energy_cost
 
     def death(self):
-        if self.health <= 0:
+        probability = hill_mortality(x=self.pesticide_exposure, 
+                                                    x50=ld50_data[self.model.bee_type],
+                                                    n=steepness_dict[self.model.bee_type][self.sensitivity])
+        r = self.random.random()
+        if r < probability:
+            #print('random', r)
+            #print('exposure', self.pesticide_exposure)
+            #print('prob', probability)
             self.remove()
-            print('death by poison')
+            #print('death by poison')
         elif self.energy <= 0:
             self.remove()
-            print('death by energy')
+            #print('death by energy')
 
     def step(self):
         self.death()

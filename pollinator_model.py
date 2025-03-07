@@ -17,25 +17,26 @@ bee_types = {
 class PollinatorModel(Model):
     def __init__(self, 
                  bee_type='honeybee',
+                 sensitivity='moderate',
                  width=150, 
                  height=150, 
                  num_pollinators=100, 
                  avg_flowers_per_unit=0.01, 
                  num_hive=2,
-                 pesticide_ratio=0.7,
-                 bee_sensing_radius=2):
+                 pesticide_ratio=0.7,):
         super().__init__()
 
         self.width = width
         self.height = height
         self.num_hive = num_hive
+        self.sensitivity = sensitivity
 
         # Create Continuous space
         self.space = ContinuousSpace(width, height, True)
         
         # Initiate number of flower with poisson distribution
         num_flowers = np.random.poisson(avg_flowers_per_unit * (width*height)**2)
-        num_flowers = 100
+        num_flowers = 200
 
         # Differentiate bee types
         self.bee_type = bee_type
@@ -46,7 +47,7 @@ class PollinatorModel(Model):
         hive_agents = Hive.create_agents(model=self, n=num_hive)
         pollinator_agents = Bees.create_agents(model=self,
                                                 n=num_pollinators,
-                                                bee_sensing_radius=bee_sensing_radius)
+                                                sensitivity=sensitivity)
 
         # place flower agent
         for i in flower_agents:
@@ -74,8 +75,9 @@ class PollinatorModel(Model):
         self.datacollector = DataCollector(
             model_reporters={
                 "Total Pollinators": lambda m: len(m.agents_by_type[Bees]),
-                "Average Bee Health": lambda m: np.mean([bee.health for bee in m.agents_by_type[Bees]]),
-                "Contaminated Bees": lambda m: len([bee.contaminated for bee in m.agents_by_type[Bees] if bee.contaminated])
+                "Average dosage": lambda m: np.mean([bee.pesticide_exposure for bee in m.agents_by_type[Bees]]),
+                "Contaminated Bees": lambda m: len([bee.contaminated for bee in m.agents_by_type[Bees] if bee.contaminated]),
+                "Average nectar": lambda m: np.mean([bee.nectar for bee in m.agents_by_type[Bees]])
             }
         )
 
@@ -93,8 +95,13 @@ class PollinatorModel(Model):
         Bees = bee_types[self.bee_type]
 
         # Create agent
-        new_agent = Bees(model=self)
+        new_agent = Bees(model=self, sensitivity=self.sensitivity)
         self.agents_by_type[Bees].add(new_agent)
+
+        if self.bee_type == 'bumblebee':
+            flowers_pos = [agent.pos for agent in self.agents_by_type[Flower]]
+            new_agent.waypoints = self.random.choices(flowers_pos, k=6)
+
         self.space.place_agent(new_agent, hive)
         return new_agent
 
