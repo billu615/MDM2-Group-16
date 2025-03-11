@@ -10,6 +10,12 @@ IMAGES = {
     'hive_contaminated': "Images/hive_contaminated.png"
 }
 
+reproduction_probs = {
+    "honeybee": {"healthy": 0.98, "contaminated": 0.6},
+    "bumblebee": {"healthy": 0.8, "contaminated": 0.4},
+    "solitary": {"healthy": 0.6, "contaminated": 0.2}
+}
+
 class Flower(Agent):
     def __init__(self, model, contaminated=False):
         super().__init__(model)
@@ -40,13 +46,13 @@ class Hive(Agent):
 
     def step(self):
         if self.contaminated:
-            probability = 0.05
+            probability = reproduction_probs[self.model.bee_type]['contaminated']
         else:
-            probability = 0.1
+            probability = reproduction_probs[self.model.bee_type]['healthy']
         if self.model.random.random() < probability:
             new_agent = self.model.add_agent(hive=self.pos)
             new_agent.hive_object = self
 
             # Remove food source for reproduction
             #self.food_source -= 50
-            print('agents added')
+            #print('agents added')

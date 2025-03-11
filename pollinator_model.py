@@ -18,12 +18,12 @@ class PollinatorModel(Model):
     def __init__(self, 
                  bee_type='honeybee',
                  sensitivity='moderate',
-                 width=150, 
-                 height=150, 
+                 width=200, 
+                 height=200, 
                  num_pollinators=100, 
-                 avg_flowers_per_unit=0.01, 
+                 num_flowers = 200, 
                  num_hive=2,
-                 pesticide_ratio=0.7,):
+                 pesticide_ratio=0.7):
         super().__init__()
 
         self.width = width
@@ -33,10 +33,7 @@ class PollinatorModel(Model):
 
         # Create Continuous space
         self.space = ContinuousSpace(width, height, True)
-        
-        # Initiate number of flower with poisson distribution
-        num_flowers = np.random.poisson(avg_flowers_per_unit * (width*height)**2)
-        num_flowers = 200
+    
 
         # Differentiate bee types
         self.bee_type = bee_type

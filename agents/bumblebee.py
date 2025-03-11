@@ -27,8 +27,8 @@ steepness_dict = {
 def hill_mortality(x, x50, n):
     """
     Hill function, return the proability of the effect
-    x: exposure level (ppb)
-    x50: concentration at which 50% of bees show the effect (LC50)
+    x: exposure level (ug)
+    x50: dosage at which 50% of bees show the effect (LD50)
     k: steepness of the response curve (need to estimate)
     """
     return (x ** n) / (x ** n + x50 ** n)
