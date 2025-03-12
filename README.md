@@ -26,7 +26,7 @@ The jupyter notebook file `notebook.ipynb` contain code to get the results of th
 - Run the model through the file `model.py`
   
   
-## Yield 
+## Yield (`Yield`)
 - The yield results is not considered in the final results, but includd in the technical note.
 - Run the file `sugarbeet.py` to get the figures.
 
