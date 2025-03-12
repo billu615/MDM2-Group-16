@@ -59,7 +59,7 @@ def hive_food_plot(model):
     plt.close(fig)
     
 # Initiate the model
-model = PollinatorModel(bee_type='honeybee', sensitivity='moderate', width=500, height=500, num_pollinators=500, pesticide_ratio=0)
+model = PollinatorModel(bee_type='solitary', sensitivity='moderate', num_pollinators=250)
 population_plot = make_plot_component("Total Pollinators")
 # health_plot = make_plot_component("Average Bee Health")
 dosage_plot = make_plot_component('Average dosage')
